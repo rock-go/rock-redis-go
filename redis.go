@@ -1,23 +1,24 @@
 package redis
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/rock-go/rock/logger"
 	"github.com/rock-go/rock/lua"
 	"time"
 )
 
 type Redis struct {
 	lua.Super
-	cfg *config
+	cfg    *config
 	client *redis.Client
-	ctx context.Context
-	meta lua.UserKV
+	ctx    context.Context
+	meta   lua.UserKV
 }
 
 func newRedis(cfg *config) *Redis {
-	r := &Redis{cfg:cfg}
+	r := &Redis{cfg: cfg}
 	r.S = lua.INIT
 	r.T = TRedis
 	return r
@@ -25,6 +26,8 @@ func newRedis(cfg *config) *Redis {
 
 func (r *Redis) Start() error {
 	r.client = redis.NewClient(r.cfg.Options())
+	r.meta = lua.NewUserKV()
+	logger.Infof("%s redis start successfully", r.cfg.name)
 	r.S = lua.RUNNING
 	r.U = time.Now()
 	return nil

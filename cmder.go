@@ -5,25 +5,25 @@ import (
 	"github.com/rock-go/rock/lua"
 )
 
-type cmder func(redis.Cmdable , *lua.LState) int
+type cmder func(redis.Cmdable, *lua.LState) int
 
-func hmset( r redis.Cmdable, L *lua.LState) int {
+func hmset(r redis.Cmdable, L *lua.LState) int {
 	n := L.GetTop()
 	if n < 3 {
 		L.RaiseError("hmset(key , ...)  #args must >= 3")
 		return 0
 	}
 
-	if (n - 1) % 2 != 0 {
+	if (n-1)%2 != 0 {
 		L.RaiseError("hmset(key , key1 , val1 , key2 , val2) must be name kv")
 		return 0
 	}
 
 	key := L.CheckString(1)
 	fields := make(map[string]interface{})
-	for i := 1 ; i<= n; i += 2 {
-		field := L.CheckString(i + 1)
-		val := L.Get(i+2)
+	for i := 2; i <= n; i += 2 {
+		field := L.CheckString(i)
+		val := L.Get(i + 1)
 		switch val.Type() {
 		case lua.LTNumber:
 			fields[field] = int(val.(lua.LNumber))
@@ -46,7 +46,7 @@ func hmset( r redis.Cmdable, L *lua.LState) int {
 	return 0
 }
 
-func hmget( r redis.Cmdable, L *lua.LState) int {
+func hmget(r redis.Cmdable, L *lua.LState) int {
 	var err error
 	var res []interface{}
 	res, err = r.HMGet(L.CheckString(1), L.CheckString(2)).Result()
@@ -82,7 +82,7 @@ func incr(r redis.Cmdable, L *lua.LState) int {
 	return 0
 }
 
-func expire(r redis.Cmdable , L *lua.LState) int {
+func expire(r redis.Cmdable, L *lua.LState) int {
 	var err error
 
 	_, err = r.HIncrBy(L.CheckString(1), L.CheckString(2), 1).Result()
@@ -93,7 +93,7 @@ func expire(r redis.Cmdable , L *lua.LState) int {
 	return 0
 }
 
-func del(r redis.Cmdable , L *lua.LState) int {
+func del(r redis.Cmdable, L *lua.LState) int {
 	var err error
 	_, err = r.Del(L.CheckString(1)).Result()
 	if err != nil {
@@ -102,7 +102,7 @@ func del(r redis.Cmdable , L *lua.LState) int {
 	return 0
 }
 
-func hdel(r redis.Cmdable , L *lua.LState) int {
+func hdel(r redis.Cmdable, L *lua.LState) int {
 	var err error
 	_, err = r.HDel(L.CheckString(1), L.CheckString(2)).Result()
 	if err != nil {

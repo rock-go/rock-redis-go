@@ -2,15 +2,15 @@ package redis
 
 import (
 	"github.com/rock-go/rock/lua"
-	"reflect"
 	"github.com/rock-go/rock/xcall"
+	"reflect"
 )
 
 var TRedis = reflect.TypeOf((*Redis)(nil)).String()
 
 func newLuaRedis(L *lua.LState) int {
 	cfg := newConfig(L)
-	proc := L.NewProc(cfg.name , TRedis)
+	proc := L.NewProc(cfg.name, TRedis)
 	if proc.IsNil() {
 		proc.Set(newRedis(cfg))
 	} else {
@@ -36,18 +36,19 @@ func (r *Redis) close(L *lua.LState) int {
 	return 0
 }
 
-func (r *Redis) NewLFunction(L *lua.LState , fn cmder) *lua.LFunction {
+func (r *Redis) NewLFunction(L *lua.LState, fn cmder) *lua.LFunction {
 	return L.NewFunction(func(co *lua.LState) int {
-		return fn(r.client , co)
+		return fn(r.client, co)
 	})
 }
 
 // LNewPipe 新建一个pipeline
 func (r *Redis) LNewPipe(L *lua.LState) int {
-	pipe := Pipe{
-		pipe: r.client.Pipeline(),
-	}
+	//pipe := Pipe{
+	//	pipe: r.client.Pipeline(),
+	//}
 
+	pipe := newPipeline(r.client)
 	L.Push(L.NewAnyData(pipe))
 	return 1
 }
@@ -68,22 +69,22 @@ func (r *Redis) Index(L *lua.LState, key string) lua.LValue {
 		lv = L.NewFunction(r.LNewPipe)
 
 	case "hmset":
-		lv = r.NewLFunction(L , hmset)
+		lv = r.NewLFunction(L, hmset)
 	case "hmget":
-		lv = r.NewLFunction(L , hmget)
+		lv = r.NewLFunction(L, hmget)
 	case "incr":
-		lv = r.NewLFunction(L , incr)
+		lv = r.NewLFunction(L, incr)
 	case "expire":
-		lv = r.NewLFunction(L , expire)
+		lv = r.NewLFunction(L, expire)
 	case "delete":
-		lv = r.NewLFunction(L , del)
+		lv = r.NewLFunction(L, del)
 
 	default:
-		L.RaiseError("%s redis %s not found" , r.Name() , key)
+		L.RaiseError("%s redis %s not found", r.Name(), key)
 		return lua.LNil
 	}
 
-	r.meta.Set(key , lv)
+	r.meta.Set(key, lv)
 	return lv
 }
 
