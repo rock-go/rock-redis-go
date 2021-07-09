@@ -13,7 +13,6 @@ type Redis struct {
 	cfg *config
 	client *redis.Client
 	ctx context.Context
-
 	meta lua.UserKV
 }
 

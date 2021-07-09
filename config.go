@@ -14,6 +14,7 @@ type config struct {
 	db         int
 	poolSize   int
 	maxConnAge int
+	shared     bool
 }
 
 func newConfig(L *lua.LState) *config {
