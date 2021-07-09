@@ -2,46 +2,22 @@ package redis
 
 import (
 	"github.com/rock-go/rock/lua"
-	"github.com/rock-go/rock/xcall"
 	"time"
+	"reflect"
+	"github.com/rock-go/rock/xcall"
 )
 
-func LuaInjectApi(env xcall.Env) {
-	env.Set("redis", lua.NewFunction(createRedisUserData))
-}
+var TRedis = reflect.TypeOf((*Redis)(nil)).String()
 
-func createRedisUserData(L *lua.LState) int {
-	opt := L.CheckTable(1)
-	cfg := Config{
-		name:       opt.CheckString("name", "redis"),
-		addr:       opt.CheckSockets("addr", L),
-		password:   opt.CheckString("password", ""),
-		db:         opt.CheckInt("db", 0),
-		poolSize:   opt.CheckInt("pool_size", 10),
-		maxConnAge: opt.CheckInt("max_conn_age", 10),
+func newLuaRedis(L *lua.LState) int {
+	cfg := newConfig(L)
+	proc := L.NewProc(cfg.name , TRedis)
+	if proc.IsNil() {
+		proc.Set(newRedis(cfg))
+	} else {
+		proc.Value.(*Redis).cfg = cfg
 	}
-
-	redis := &Redis{C: cfg}
-
-	var obj *Redis
-	var ok bool
-
-	proc := L.NewProc(redis.C.name)
-	if proc.Value == nil {
-		proc.Value = redis
-		goto done
-	}
-
-	obj, ok = proc.Value.(*Redis)
-	if !ok {
-		L.RaiseError("invalid redis proc")
-		return 0
-	}
-	obj.C = cfg
-
-done:
 	L.Push(proc)
-
 	return 1
 }
 
@@ -50,7 +26,6 @@ func (r *Redis) start(L *lua.LState) int {
 		L.RaiseError("redis start error")
 		return 0
 	}
-
 	return 0
 }
 
@@ -59,7 +34,6 @@ func (r *Redis) close(L *lua.LState) int {
 		L.RaiseError("redis close error")
 		return 0
 	}
-
 	return 0
 }
 
@@ -149,55 +123,59 @@ func (r *Redis) LNewPipe(L *lua.LState) int {
 		pipe: r.client.Pipeline(),
 	}
 
-	L.Push(&lua.LightUserData{Value: &pipe})
+	L.Push(L.NewAnyData(pipe))
 	return 1
 }
 
 func (r *Redis) Index(L *lua.LState, key string) lua.LValue {
-	if key == "start" {
-		return lua.NewFunction(r.start)
-	}
-	if key == "close" {
-		return lua.NewFunction(r.close)
-	}
-	if key == "hmset" {
-		return lua.NewFunction(r.LHMSet)
-	}
-	if key == "hmget" {
-		return lua.NewFunction(r.LHMGet)
-	}
-	if key == "hmdel" {
-		return lua.NewFunction(r.LHDelete)
-	}
-	if key == "incr" {
-		return lua.NewFunction(r.LIncr)
-	}
-	if key == "expire" {
-		return lua.NewFunction(r.LExpire)
-	}
-	if key == "delete" {
-		return lua.NewFunction(r.LDelete)
-	}
-	if key == "pipeline" {
-		return lua.NewFunction(r.LNewPipe)
+	var lv lua.LValue
+	lv = r.meta.Get(key)
+	if lv != lua.LNil {
+		return lv
 	}
 
-	return lua.LNil
+	switch key {
+	case "start":
+		lv = L.NewFunction(r.start)
+	case "close":
+		lv = L.NewFunction(r.close)
+	case "hmset":
+		lv = L.NewFunction(r.LHMSet)
+	case "hmget":
+		lv = L.NewFunction(r.LHMGet)
+	case "incr":
+		lv = L.NewFunction(r.LIncr)
+	case "expire":
+		lv = L.NewFunction(r.LExpire)
+	case "delete":
+		lv = L.NewFunction(r.LDelete)
+	case "pipeline":
+		lv = L.NewFunction(r.LNewPipe)
+	default:
+		L.RaiseError("%s redis %s not found" , r.Name() , key)
+		return lua.LNil
+	}
+
+	r.meta.Set(key , lv)
+	return lv
 }
 
 func (r *Redis) NewIndex(L *lua.LState, key string, val lua.LValue) {
 	switch key {
 	case "name":
-		r.C.name = lua.CheckString(L, val)
+		r.cfg.name = lua.CheckString(L, val)
 	case "addr":
-		r.C.addr = lua.CheckString(L, val)
+		r.cfg.addr = lua.CheckString(L, val)
 	case "password":
-		r.C.password = lua.CheckString(L, val)
+		r.cfg.password = lua.CheckString(L, val)
 	case "db":
-		r.C.db = lua.CheckInt(L, val)
+		r.cfg.db = lua.CheckInt(L, val)
 	case "pool_size":
-		r.C.poolSize = lua.CheckInt(L, val)
+		r.cfg.poolSize = lua.CheckInt(L, val)
 	case "max_conn_age":
-		r.C.maxConnAge = lua.CheckInt(L, val)
+		r.cfg.maxConnAge = lua.CheckInt(L, val)
 	}
+}
+func LuaInjectApi(env xcall.Env) {
+	env.Set("redis", lua.NewFunction(newLuaRedis))
 }

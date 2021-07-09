@@ -3,7 +3,36 @@ package redis
 import (
 	"github.com/rock-go/rock/lua"
 	"time"
+	"github.com/go-redis/redis"
 )
+
+type Pipe struct {
+	lua.NoReflect
+	pipe redis.Pipeliner
+	meta lua.UserKV
+}
+
+func newPipeline( cli *redis.Client ) *Pipe {
+	p := new(Pipe)
+	p.meta = lua.NewUserKV()
+	p.pipe = cli.Pipeline()
+	p.initMeta()
+	return p
+}
+
+func (p *Pipe) initMeta() {
+	p.meta.Set("hmset" , lua.NewFunction(p.LHMSet))
+	p.meta.Set("hmdel" , lua.NewFunction(p.LHDelete))
+	p.meta.Set("incr"  , lua.NewFunction(p.LIncr))
+	p.meta.Set("expire", lua.NewFunction(p.LExpire))
+	p.meta.Set("exec"  , lua.NewFunction(p.LExec))
+	p.meta.Set("delete", lua.NewFunction(p.LDelete))
+	p.meta.Set("close" , lua.NewFunction(p.LClose))
+}
+
+func (p *Pipe) Get(L *lua.LState , key string) lua.LValue {
+	return p.meta.Get(key)
+}
 
 func (p *Pipe) LExec(L *lua.LState) int {
 	var err error
@@ -11,9 +40,9 @@ func (p *Pipe) LExec(L *lua.LState) int {
 	if err != nil {
 		L.RaiseError("pipeline execute error: %v", err)
 	}
-
 	return 0
 }
+
 
 func (p *Pipe) LClose(L *lua.LState) int {
 	if err := p.pipe.Close(); err != nil {
@@ -45,7 +74,6 @@ func (p *Pipe) LExpire(L *lua.LState) int {
 	if err != nil {
 		L.RaiseError("pipeline set expire error: %v", err)
 	}
-
 	return 0
 }
 
@@ -67,30 +95,4 @@ func (p *Pipe) LHDelete(L *lua.LState) int {
 	}
 
 	return 0
-}
-
-func (p *Pipe) Index(L *lua.LState, key string) lua.LValue {
-	if key == "hmset" {
-		return lua.NewFunction(p.LHMSet)
-	}
-	if key == "hmdel" {
-		return lua.NewFunction(p.LHDelete)
-	}
-	if key == "incr" {
-		return lua.NewFunction(p.LIncr)
-	}
-	if key == "expire" {
-		return lua.NewFunction(p.LExpire)
-	}
-	if key == "exec" {
-		return lua.NewFunction(p.LExec)
-	}
-	if key == "delete" {
-		return lua.NewFunction(p.LDelete)
-	}
-	if key == "close" {
-		return lua.NewFunction(p.LClose)
-	}
-
-	return lua.LNil
 }

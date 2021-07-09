@@ -1,12 +1,13 @@
 package redis
 
 import (
-	"context"
 	"github.com/go-redis/redis"
 	"github.com/rock-go/rock/lua"
+	"github.com/rock-go/rock/utils"
+	"time"
 )
 
-type Config struct {
+type config struct {
 	name       string
 	addr       string
 	password   string
@@ -15,24 +16,58 @@ type Config struct {
 	maxConnAge int
 }
 
-type Redis struct {
-	lua.Super
-	C Config
+func newConfig(L *lua.LState) *config {
+	tab := L.CheckTable(1)
+	cfg := &config{}
+	tab.ForEach(func(key lua.LValue, val lua.LValue) {
+		switch key.String() {
+		case "name":
+			cfg.name = utils.CheckProcName(val , L)
 
-	client *redis.Client
+		case "addr":
+			cfg.addr = utils.CheckSockets(val , L)
 
-	status lua.LightUserDataStatus
-	uptime string
+		case "password":
+			cfg.password = utils.LValueToStr(val , "")
 
-	ctx context.Context
+		case "db":
+			cfg.db = utils.LValueToInt(val , 0)
+
+		case "pool_size":
+			cfg.poolSize = utils.LValueToInt(val , 10)
+
+		case "max_conn_age":
+			cfg.maxConnAge = utils.LValueToInt(val , 10)
+
+		default:
+			L.RaiseError("not found %s key" , key.String())
+		}
+	})
+
+	if e := cfg.verify(); e != nil {
+		L.RaiseError("%v" , e)
+		return nil
+	}
+
+	return cfg
+}
+
+func (cfg *config) Options() *redis.Options {
+	return &redis.Options{
+		DB:         cfg.db,
+		Addr:       cfg.addr,
+		Password:   cfg.password,
+		PoolSize:   cfg.poolSize,
+		MaxConnAge: time.Duration(cfg.maxConnAge) * time.Second,
+	}
+}
+
+func (cfg *config) verify() error {
+	return nil
 }
 
 // Pipe 批量提交命令，当需要从多个维度去分析一条消息时，使用pipeline
-type Pipe struct {
-	lua.Super
-	pipe redis.Pipeliner
-}
+//type Pipe struct {
+//	pipe redis.Pipeliner
+//}
 
-func (p *Pipe) Type() string {
-	return "pipeline"
-}

@@ -2,43 +2,45 @@ package redis
 
 import (
 	"fmt"
+	"context"
 	"github.com/go-redis/redis"
 	"github.com/rock-go/rock/lua"
 	"time"
 )
 
-func (r *Redis) Start() error {
-	r.client = redis.NewClient(&redis.Options{
-		DB:         r.C.db,
-		Addr:       r.C.addr,
-		Password:   r.C.password,
-		PoolSize:   r.C.poolSize,
-		MaxConnAge: time.Duration(r.C.maxConnAge) * time.Second,
-	})
+type Redis struct {
+	lua.Super
+	cfg *config
+	client *redis.Client
+	ctx context.Context
 
-	r.status = lua.RUNNING
-	r.uptime = time.Now().Format("2006-01-02 15:04:05")
+	meta lua.UserKV
+}
+
+func newRedis(cfg *config) *Redis {
+	r := &Redis{cfg:cfg}
+	r.S = lua.INIT
+	r.T = TRedis
+	return r
+}
+
+func (r *Redis) Start() error {
+	r.client = redis.NewClient(r.cfg.Options())
+	r.S = lua.RUNNING
+	r.U = time.Now()
 	return nil
 }
 
 func (r *Redis) Close() error {
-	r.status = lua.CLOSE
+	r.S = lua.CLOSE
 	return r.client.Close()
 }
 
-func (r *Redis) State() lua.LightUserDataStatus {
-	return r.status
-}
-
 func (r *Redis) Name() string {
-	return r.C.name
-}
-
-func (r *Redis) Type() string {
-	return "redis client"
+	return r.cfg.name
 }
 
 func (r *Redis) Status() string {
 	return fmt.Sprintf("name:%s , status:%s , uptime:%s",
-		r.Name(), r.status.String(), r.uptime)
+		r.Name(), r.S.String(), r.U)
 }
