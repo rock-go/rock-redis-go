@@ -22,7 +22,7 @@ rock.Inject(xcall.Rock, redis.LuaInjectApi)
 调用时，一般声明为一个全局变量redis，供数据分析模块使用。
 ```lua
 -- redis 模块
-redis = rock.redis {
+local redis = rock.redis {
     name = "redis",
     addr = "192.168.3.71:6379",
     password = "localtest",
