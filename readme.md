@@ -55,11 +55,8 @@ redis.delete("test_key")
 
 -- pipeline 操作,批量执行操作
 local pipeline = redis.pipeline()
-redis.hmset("test_key", "test_field", 1)
-redis.hmset("test_key_1", "test_field", 1)
-redis.hmset("test_key_2", "test_field", 1)
-redis.hmset("test_key_3", "test_field", 1)
-redis.hmset("test_key_3", "test_field_1", 1)
+redis.hmset("key" , "name" , "x" , "age" , 18 , "pass" , "123654")
+redis.hmset("key" , "name" , "s" , "age" , 18 , "pass" , "123654")
 pipeline.exec()
 pipeline.close()
 
