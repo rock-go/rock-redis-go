@@ -21,6 +21,7 @@ func newRedis(cfg *config) *Redis {
 	r := &Redis{cfg: cfg}
 	r.S = lua.INIT
 	r.T = TRedis
+	r.meta = lua.NewUserKV()
 	return r
 }
 
