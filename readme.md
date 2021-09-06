@@ -19,7 +19,9 @@ rock.Inject(xcall.Rock, redis.LuaInjectApi)
 ```
 
 ## lua 脚本调用
+
 调用时，一般声明为一个全局变量redis，供数据分析模块使用。
+
 ```lua
 -- redis 模块
 local redis = rock.redis {
