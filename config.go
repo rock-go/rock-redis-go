@@ -40,6 +40,7 @@ func newConfig(L *lua.LState) *config {
 		case "max_conn_age":
 			cfg.maxConnAge = auxlib.LValueToInt(val, 10)
 
+
 		default:
 			L.RaiseError("not found %s key", key.String())
 		}
@@ -66,8 +67,3 @@ func (cfg *config) Options() *redis.Options {
 func (cfg *config) verify() error {
 	return nil
 }
-
-// Pipe 批量提交命令，当需要从多个维度去分析一条消息时，使用pipeline
-//type Pipe struct {
-//	pipe redis.Pipeliner
-//}
