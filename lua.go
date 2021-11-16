@@ -6,11 +6,11 @@ import (
 	"reflect"
 )
 
-var TRedis = reflect.TypeOf((*Redis)(nil)).String()
+var redisTypeOf = reflect.TypeOf((*Redis)(nil)).String()
 
 func newLuaRedis(L *lua.LState) int {
 	cfg := newConfig(L)
-	proc := L.NewProc(cfg.name, TRedis)
+	proc := L.NewProc(cfg.name, redisTypeOf)
 	if proc.IsNil() {
 		proc.Set(newRedis(cfg))
 	} else {

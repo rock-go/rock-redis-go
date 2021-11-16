@@ -2,8 +2,8 @@ package redis
 
 import (
 	"github.com/go-redis/redis"
+	"github.com/rock-go/rock/auxlib"
 	"github.com/rock-go/rock/lua"
-	"github.com/rock-go/rock/utils"
 	"time"
 )
 
@@ -23,30 +23,30 @@ func newConfig(L *lua.LState) *config {
 	tab.ForEach(func(key lua.LValue, val lua.LValue) {
 		switch key.String() {
 		case "name":
-			cfg.name = utils.CheckProcName(val , L)
+			cfg.name = auxlib.CheckProcName(val, L)
 
 		case "addr":
-			cfg.addr = utils.CheckSockets(val , L)
+			cfg.addr = auxlib.CheckSockets(val, L)
 
 		case "password":
-			cfg.password = utils.LValueToStr(val , "")
+			cfg.password = auxlib.LValueToStr(val, "")
 
 		case "db":
-			cfg.db = utils.LValueToInt(val , 0)
+			cfg.db = auxlib.LValueToInt(val, 0)
 
 		case "pool_size":
-			cfg.poolSize = utils.LValueToInt(val , 10)
+			cfg.poolSize = auxlib.LValueToInt(val, 10)
 
 		case "max_conn_age":
-			cfg.maxConnAge = utils.LValueToInt(val , 10)
+			cfg.maxConnAge = auxlib.LValueToInt(val, 10)
 
 		default:
-			L.RaiseError("not found %s key" , key.String())
+			L.RaiseError("not found %s key", key.String())
 		}
 	})
 
 	if e := cfg.verify(); e != nil {
-		L.RaiseError("%v" , e)
+		L.RaiseError("%v", e)
 		return nil
 	}
 
@@ -71,4 +71,3 @@ func (cfg *config) verify() error {
 //type Pipe struct {
 //	pipe redis.Pipeliner
 //}
-

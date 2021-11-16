@@ -6,7 +6,6 @@ import (
 )
 
 type Pipe struct {
-	lua.NoReflect
 	pipe redis.Pipeliner
 	meta lua.UserKV
 }

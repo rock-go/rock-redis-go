@@ -4,7 +4,7 @@ import "github.com/rock-go/rock/lua"
 
 func (r *Redis) Header(out lua.Printer) {
 	out.Printf("type: redis client")
-	out.Printf("uptime: %s", r.U)
+	out.Printf("uptime: %s", r.Uptime)
 	out.Printf("version: v1.0.0")
 	out.Println("")
 }
